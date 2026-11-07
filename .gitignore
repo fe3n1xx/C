@@ -1,3 +1,10 @@
+# VSCODE CONFIG FILES
 .vscode/
-noughts-and-crosses/main
-noughts-and-crosses/a.out
+# HIDDEN FILES
+*.hdn
+# COMPILED EXECUTABLES
+*.cx
+# GCC FILES
+*/a.out
+# TESTING EXECUTABLES
+*/main

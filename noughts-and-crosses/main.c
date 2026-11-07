@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 void printGame(char *destination, size_t max_size, char gameArray[3][3])
 {
