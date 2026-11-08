@@ -28,6 +28,22 @@ ls - list files in a directory
     function:
     ls(var);
 
+checkdir - check if a directory exists
+    
+    syntax:
+    checkdir <directory>
+    function:
+    checkdir(var);
+
+tedit - text editor
+
+    syntax:
+    tedit <file>
+    function:
+    tedit();
+    appfile:
+    ext/tedit/tedit.cx
+    
 ==========
 Functions:
 ==========
@@ -247,7 +263,7 @@ void ls(char *lsdir) {
        
         // Loop through sorted items, get metadata and print
         printf("%-12s %s\n", "PERMISSIONS", "FILENAME");
-        printf("---------------------------\n");
+        printf("---------------------\n");
 
         for (size_t i = 0; i < count; i++) {
             struct stat file_stat;
@@ -271,7 +287,7 @@ void ls(char *lsdir) {
         // Clean up top level array memory
         free(filenames);
     } else {
-        printf("Unknown Directory.");
+        printf("Unknown Directory.\n");
     }
 }
 
@@ -313,11 +329,7 @@ int main () {
         } else if (starts_with(USRInput, "ls")) {
             //
             remove_initial_prefix(USRInput, "ls ");
-            if (USRInput == "pwd") {
-                ls(pwd);
-            } else {
-                ls(USRInput);
-            }
+            ls(USRInput);
         } else if (starts_with(USRInput, "checkdir")) {
             //
             remove_initial_prefix(USRInput, "checkdir ");
