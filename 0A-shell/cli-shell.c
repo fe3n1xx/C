@@ -35,6 +35,8 @@ Functions:
 remove_initial_prefix(var, "prefix"); - Remove prefix from a string, returns void
 starts_with(var, "prefix"); - Checks if prefix starts the variable, returns bool
 directory_exists(var); - Checks if a directory exists, returns bool
+compare_strings("String1", "String2"); - Compare strings against eachother, returns int
+get_permissions(mode, perms); - Get a files permissions, returns void
 
 ========
 Imports:
@@ -46,6 +48,8 @@ string.h
 stdbool.h
 dirent.h
 errno.h
+sys/stat.h
+stdlib.h
 
 ==========
 Variables:
@@ -54,25 +58,48 @@ Variables:
 char USRInput[256]; - The variable that is what the user inputs to the shell
 char newpwd; - Used by the cd(var) function to change the pwd
 char toPrint; - Used by echo("String") function to print
+char lsdir; - Used by ls(dir) function to share the pwd
+char checkdirdir - used by checkdir(dir) function as the buffer for the directory
 bool running; - Used to indicate that the program is running
+
 */
 
-// IMPORTS
+/*
+=======
+IMPORTS
+=======
+*/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <stdlib.h>
 
-// VARIABLES
+/*
+=========
+VARIABLES
+=========
+*/
+
 char USRInput[256];
 char newpwd;
 char toPrint;
+char lsdir;
+char checkdirdir;
 bool running;
 
 // SET PWD
-char pwd[256] = "~/";
+char pwd[256] = "none";
+
+/*
+=========
+FUNCTIONS
+=========
+*/
 
 // Remove initial prefix from string
 void remove_initial_prefix(char *str, const char *prefix) {
@@ -108,12 +135,56 @@ bool directory_exists(const char *path) {
     }
 }
 
+// Alphabetical order comparison function
+int compare_strings(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+// Get File Permissions
+void get_permissions(mode_t mode, char *perms) {
+
+    // Determine file type
+
+    if (S_ISDIR(mode)) perms[0] = 'd';
+    else if (S_ISLNK(mode)) perms[0] = 'l';
+    else perms[0] = '-';
+
+    // User permissions
+
+    perms[1] = (mode & S_IRUSR) ? 'r' : '-';
+    perms[2] = (mode & S_IWUSR) ? 'w' : '-';
+    perms[3] = (mode & S_IXUSR) ? 'x' : '-';
+
+    // Group permissions
+
+    perms[4] = (mode & S_IRGRP) ? 'r' : '-';
+    perms[5] = (mode & S_IWGRP) ? 'w' : '-';
+    perms[6] = (mode & S_IXGRP) ? 'x' : '-';
+
+    // Other permissions
+
+    perms[7] = (mode & S_IROTH) ? 'r' : '-';
+    perms[8] = (mode & S_IWOTH) ? 'w' : '-';
+    perms[9] = (mode & S_IXOTH) ? 'x' : '-';
+
+    // Null terminator
+    
+    perms[10] = '\0';
+}
+
+/*
+========
+COMMANDS
+========
+*/
 
 // CD COMMAND
 
 void cd(char *newpwd) {
     if (newpwd != NULL && directory_exists(newpwd)) {
         snprintf(pwd, sizeof(pwd), "%s", newpwd);
+    } else {
+        printf("Unknown or unrecognised directory\n");
     }
 }
 
@@ -121,12 +192,105 @@ void cd(char *newpwd) {
 // ECHO COMMAND
 
 void echo(char toPrint[sizeof(toPrint)]) {
-    printf(toPrint);
+    printf("%s\n", toPrint);
 }
 
+// LS COMMAND
+
+void ls(char *lsdir) {
+    if (directory_exists(lsdir)) {
+        // Open directory
+        DIR *dir = opendir(lsdir);
+
+        // Array alloc to hold file names
+        size_t capacity = 10;
+        size_t count = 0;
+
+        char **filenames = malloc(capacity * sizeof(char *));
+
+        if (!filenames) {
+            printf("Memory allocation failed");
+            closedir(dir);
+            return;
+        }
+
+        struct dirent *entry;
+        
+        // Gather all file names into dynamic array
+        while ((entry = readdir(dir)) != NULL) {
+            // Resize array if it runs out of space
+            if (count >= capacity) {
+                capacity *= 2;
+                char **temp = realloc(filenames, capacity * sizeof(char *));
+                if (!temp) {
+                    printf("Memory reallocation failed");
+                    break;
+                }
+                filenames = temp;
+            }
+            // Store filenames safely in memory via duplication
+            filenames[count] = strdup(entry->d_name);
+            count++;
+        }
+
+        // Close directory as it is unneeded now
+        closedir(dir);
+
+        // Sort the file names alphabetically
+        qsort(filenames, count, sizeof(char *), compare_strings);
+
+        /*
+        =========
+        LS OUTPUT
+        =========
+        */
+       
+        // Loop through sorted items, get metadata and print
+        printf("%-12s %s\n", "PERMISSIONS", "FILENAME");
+        printf("---------------------------\n");
+
+        for (size_t i = 0; i < count; i++) {
+            struct stat file_stat;
+            char perms[] = "----------";
+            // Full-path buffer
+            char full_path[1024];
+
+            // Combine lsdir and filenames[i] into lsdir/filename
+            snprintf(full_path, sizeof(full_path), "%s/%s", lsdir, filenames[i]);
+
+            // Fetch file attributes via stat
+            if (stat(full_path, &file_stat) == 0) {
+                get_permissions(file_stat.st_mode, perms);
+            }
+
+            printf("%s %s\n", perms, filenames[i]);
+
+            // Free up memory
+            free(filenames[i]);
+        }
+        // Clean up top level array memory
+        free(filenames);
+    } else {
+        printf("Unknown Directory.");
+    }
+}
+
+// CHECKDIR COMMAND
+void checkdir(char *checkdirdir) {
+    //
+    if (directory_exists(checkdirdir)) printf("Directory %s exists!\n", checkdirdir);
+    else printf("Directory %s does not exist!\n", checkdirdir);
+}
 /*
+===============
 INT MAIN
+
+WHILE RUNNING:
+ADDED COMMANDS:
+CD
+===============
 */
+
 int main () {
     //
     bool running = true;
@@ -142,6 +306,24 @@ int main () {
             //
             remove_initial_prefix(USRInput, "cd ");
             cd(USRInput);
+        } else if (starts_with(USRInput, "echo")) {
+            //
+            remove_initial_prefix(USRInput, "echo ");
+            echo(USRInput);
+        } else if (starts_with(USRInput, "ls")) {
+            //
+            remove_initial_prefix(USRInput, "ls ");
+            if (USRInput == "pwd") {
+                ls(pwd);
+            } else {
+                ls(USRInput);
+            }
+        } else if (starts_with(USRInput, "checkdir")) {
+            //
+            remove_initial_prefix(USRInput, "checkdir ");
+            checkdir(USRInput);
+        } else {
+            printf("Unknown or unrecognised command: %s\n", USRInput);
         }
     }
 }
