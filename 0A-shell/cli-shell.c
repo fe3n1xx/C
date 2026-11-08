@@ -35,15 +35,41 @@ checkdir - check if a directory exists
     function:
     checkdir(var);
 
-tedit - text editor
+fperm - check a files permissions
 
     syntax:
-    tedit <file>
+    fperm <file>
     function:
-    tedit();
-    appfile:
-    ext/tedit/tedit.cx
-    
+    fperm(var);
+
+sys - run a command in the systems shell
+
+    syntax:
+    sys <command>
+    function:
+    sys(var);
+
+clear - clear the terminal
+
+    syntax:
+    clear
+    function:
+    clear();
+
+cx - run a compiled executble
+
+    syntax:
+    cx <file>
+    function:
+    cx(file);
+
+leave - exit the terminal
+
+    syntax:
+    leave
+    function:
+    leave();
+
 ==========
 Functions:
 ==========
@@ -75,7 +101,9 @@ char USRInput[256]; - The variable that is what the user inputs to the shell
 char newpwd; - Used by the cd(var) function to change the pwd
 char toPrint; - Used by echo("String") function to print
 char lsdir; - Used by ls(dir) function to share the pwd
-char checkdirdir - used by checkdir(dir) function as the buffer for the directory
+char checkdirdir; - used by checkdir(dir) function as the buffer for the directory
+char syscmd; - used by the sys command
+char cxtorun; - used by the cx command
 bool running; - Used to indicate that the program is running
 
 */
@@ -106,6 +134,8 @@ char newpwd;
 char toPrint;
 char lsdir;
 char checkdirdir;
+char syscmd;
+char cxtorun;
 bool running;
 
 // SET PWD
@@ -297,13 +327,56 @@ void checkdir(char *checkdirdir) {
     if (directory_exists(checkdirdir)) printf("Directory %s exists!\n", checkdirdir);
     else printf("Directory %s does not exist!\n", checkdirdir);
 }
+
+// SYS COMMAND
+void sys(char *syscmd) {
+    system(syscmd);
+}
+
+// CLEAR COMMAND
+
+void clear() {
+    printf("\e[1;1H\e[2J");
+}
+
+// CX COMMAND
+
+void cx(char *cxtorun) {
+    //
+    printf("Starting executable...\n");
+
+    cxtorun = ("./%s", cxtorun);
+
+    int status = system(cxtorun);
+
+    if (status ==  -1) {
+        printf("Failed to run the executable.\n");
+    } else {
+        printf("Executable finished.\n");
+    }
+}
+
+// LEAVE COMMAND
+
+void leave() {
+    exit(0);
+}
+
 /*
 ===============
 INT MAIN
 
 WHILE RUNNING:
 ADDED COMMANDS:
+
 CD
+ECHO
+LS
+CHECKDIR
+SYS
+CLEAR
+LEAVE
+CX
 ===============
 */
 
@@ -334,6 +407,16 @@ int main () {
             //
             remove_initial_prefix(USRInput, "checkdir ");
             checkdir(USRInput);
+        } else if (starts_with(USRInput, "sys")) {
+            remove_initial_prefix(USRInput, "sys ");
+            sys(USRInput);
+        } else if (starts_with(USRInput, "clear")) {
+            clear();
+        } else if (starts_with(USRInput, "leave")) {
+            leave();
+        } else if (starts_with(USRInput, "cx")) {
+            remove_initial_prefix(USRInput, "cx ");
+            cx(USRInput);
         } else {
             printf("Unknown or unrecognised command: %s\n", USRInput);
         }
