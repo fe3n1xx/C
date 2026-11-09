@@ -1,0 +1,5 @@
+// 0A Shell test file
+echo HELLO! THIS IS A TEST!
+ls /
+checkdir /
+leave

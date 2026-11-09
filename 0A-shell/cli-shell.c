@@ -70,6 +70,20 @@ leave - exit the terminal
     function:
     leave();
 
+ping - ping a server over the internet
+
+    syntax:
+    ping <ip>
+    function:
+    ping(ip);
+
+// - comments
+
+    syntax:
+    // <comment>
+    function:
+    NONE
+    
 ==========
 Functions:
 ==========
@@ -104,6 +118,7 @@ char lsdir; - Used by ls(dir) function to share the pwd
 char checkdirdir; - used by checkdir(dir) function as the buffer for the directory
 char syscmd; - used by the sys command
 char cxtorun; - used by the cx command
+char toPingIP; - used by the ping command to save the IP address
 bool running; - Used to indicate that the program is running
 
 */
@@ -136,6 +151,7 @@ char lsdir;
 char checkdirdir;
 char syscmd;
 char cxtorun;
+char toPingIP;
 bool running;
 
 // SET PWD
@@ -356,6 +372,13 @@ void cx(char *cxtorun) {
     }
 }
 
+// PING COMMAND
+
+void ping(char *toPingIP) {
+    //
+    system(toPingIP);
+}
+
 // LEAVE COMMAND
 
 void leave() {
@@ -377,6 +400,8 @@ SYS
 CLEAR
 LEAVE
 CX
+PING
+// - COMMENTS
 ===============
 */
 
@@ -417,6 +442,10 @@ int main () {
         } else if (starts_with(USRInput, "cx")) {
             remove_initial_prefix(USRInput, "cx ");
             cx(USRInput);
+        } else if (starts_with(USRInput, "ping")) {
+            ping(USRInput);
+        } else if (starts_with(USRInput, "//")) {
+            //
         } else {
             printf("Unknown or unrecognised command: %s\n", USRInput);
         }
