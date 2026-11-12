@@ -12,3 +12,5 @@
 .github/
 # TEDIT PROJECT
 0A-shell/ext/
+# CParse testing
+cparse/test.*
